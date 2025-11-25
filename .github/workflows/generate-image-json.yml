@@ -1,0 +1,61 @@
+name: Generate Image JSON
+
+on:
+  push:
+    paths:
+      - "wallpapers/**"   # Run only if wallpapers folder changes
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Generate JSON
+      run: |
+        python3 << 'EOF'
+        import os, json
+
+        root = "wallpapers"
+        repo = "${{ github.repository }}"
+        branch = "main"
+
+        result = []
+
+        # Loop all categories
+        for category in os.listdir(root):
+            category_path = os.path.join(root, category)
+            if not os.path.isdir(category_path):
+                continue
+
+            base = f"https://raw.githubusercontent.com/{repo}/{branch}/{root}/{category}/"
+
+            files = []
+            for f in os.listdir(category_path):
+                if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                    files.append({
+                        "name": f,
+                        "url": base + f
+                    })
+
+            if files:
+                result.append({
+                    "category": category,
+                    "files": files
+                })
+
+        # Generate main JSON
+        with open("images.json", "w") as out:
+            json.dump(result, out, indent=2)
+
+        print("✔ Generated images.json with", len(result), "categories.")
+        EOF
+
+    - name: Commit changes
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add images.json
+        git commit -m "Auto-update images.json" || echo "No changes to commit"
+        git push
