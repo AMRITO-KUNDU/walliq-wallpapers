@@ -3,7 +3,10 @@ name: Generate Image JSON
 on:
   push:
     paths:
-      - "wallpapers/**"   # Run only if wallpapers folder changes
+      - "wallpapers/**"
+
+permissions:
+  contents: write    # <── REQUIRED for git push
 
 jobs:
   build:
@@ -23,7 +26,6 @@ jobs:
 
         result = []
 
-        # Loop all categories
         for category in os.listdir(root):
             category_path = os.path.join(root, category)
             if not os.path.isdir(category_path):
@@ -45,7 +47,6 @@ jobs:
                     "files": files
                 })
 
-        # Generate main JSON
         with open("images.json", "w") as out:
             json.dump(result, out, indent=2)
 
